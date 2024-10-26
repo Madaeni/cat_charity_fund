@@ -35,20 +35,18 @@ async def create_new_project(
     await check_name_duplicate(charity_project.name, session)
     new_project = await charity_project_crud.create(
         obj_in=charity_project,
-        # session=session,
+        session=session,
     )
-    from_objs = await donation_crud.get_opened(session)
+    from_objs = await donation_crud.get_unfunded(session)
     if from_objs:
-        modified = charity_project_crud.invest(
+        modified, new_project = charity_project_crud.invest(
             target=new_project, sources=from_objs
         )
-        await charity_project_crud.bulk_update(
-            sources=modified, session=session
-        )
-    else:
-        session.add(new_project)
-        await session.commit()
-        await session.refresh(new_project)
+        for obj in modified:
+            session.add(obj)
+    session.add(new_project)
+    await session.commit()
+    await session.refresh(new_project)
     return new_project
 
 

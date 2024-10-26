@@ -30,18 +30,19 @@ async def create_donation(
 ):
     new_donation = await donation_crud.create(
         obj_in=donation,
+        session=session,
         user=user,
     )
-    from_objs = await charity_project_crud.get_opened(session)
+    from_objs = await charity_project_crud.get_unfunded(session)
     if from_objs:
-        modified = donation_crud.invest(
+        modified, new_donation = donation_crud.invest(
             target=new_donation, sources=from_objs
         )
-        await donation_crud.bulk_update(sources=modified, session=session)
-    else:
-        session.add(new_donation)
-        await session.commit()
-        await session.refresh(new_donation)
+        for obj in modified:
+            session.add(obj)
+    session.add(new_donation)
+    await session.commit()
+    await session.refresh(new_donation)
     return new_donation
 
 

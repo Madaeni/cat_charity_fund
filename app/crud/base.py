@@ -35,23 +35,13 @@ class CRUDBase:
     async def create(
             self,
             obj_in,
-            # session: AsyncSession,
+            session: AsyncSession,
             user: Optional[User] = None,
     ):
         obj_in_data = obj_in.dict()
         if user:
             obj_in_data['user_id'] = user.id
         db_obj = self.model(**obj_in_data)
-        # session.add(db_obj)
-        # await session.commit()
-        # await session.refresh(db_obj)
-        return db_obj
-
-    async def save(
-        self,
-        db_obj,
-        session: AsyncSession,
-    ):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
@@ -73,15 +63,6 @@ class CRUDBase:
         await session.commit()
         await session.refresh(db_obj)
         return db_obj
-
-    async def bulk_update(
-            self,
-            sources,
-            session: AsyncSession,
-    ):
-        for obj in sources:
-            session.add(obj)
-        await session.commit()
 
     async def remove(
             self,
@@ -114,7 +95,7 @@ class CRUDBase:
         )
         return db_objs.scalars().all()
 
-    async def get_opened(
+    async def get_unfunded(
         self,
         session: AsyncSession,
     ):
@@ -154,5 +135,4 @@ class CRUDBase:
                 target.fully_invested = True
                 target.close_date = datetime.now()
             modified.append(source)
-        modified.append(target)
-        return modified
+        return modified, target
