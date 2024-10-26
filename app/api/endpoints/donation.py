@@ -28,20 +28,17 @@ async def create_donation(
         session: AsyncSession = Depends(get_async_session),
         user: User = Depends(current_user),
 ):
-    from_objs = await charity_project_crud.get_open_projects(session)
+    from_objs = await charity_project_crud.get_opened(session)
+    new_donation = await donation_crud.create(
+        obj_in=donation,
+        session=session,
+        user=user,
+    )
     if from_objs:
-        new_donation = await donation_crud.create_and_invest(
-            obj_in=donation,
-            from_objs=from_objs,
-            session=session,
-            user=user
+        modified = donation_crud.invest(
+            target=new_donation, sources=from_objs
         )
-    else:
-        new_donation = await donation_crud.create(
-            obj_in=donation,
-            session=session,
-            user=user
-        )
+        await donation_crud.bulk_update(sources=modified, session=session)
     return new_donation
 
 

@@ -9,8 +9,8 @@ async def check_name_duplicate(
         project_name: str,
         session: AsyncSession,
 ) -> None:
-    project_id = await charity_project_crud.get_project_id_by_name(
-        project_name=project_name,
+    project_id = await charity_project_crud.get_id_by_name(
+        obj_name=project_name,
         session=session
     )
     if project_id:

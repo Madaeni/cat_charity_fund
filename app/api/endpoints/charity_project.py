@@ -33,17 +33,17 @@ async def create_new_meeting_room(
 ):
     """Только для суперюзеров."""
     await check_name_duplicate(charity_project.name, session)
-    from_objs = await donation_crud.get_not_distributed_donations(session)
+    from_objs = await donation_crud.get_opened(session)
+    new_project = await charity_project_crud.create(
+        obj_in=charity_project,
+        session=session,
+    )
     if from_objs:
-        new_project = await charity_project_crud.create_and_invest(
-            obj_in=charity_project,
-            from_objs=from_objs,
-            session=session,
+        modified = charity_project_crud.invest(
+            target=new_project, sources=from_objs
         )
-    else:
-        new_project = await charity_project_crud.create(
-            charity_project,
-            session
+        await charity_project_crud.bulk_update(
+            sources=modified, session=session
         )
     return new_project
 
@@ -71,7 +71,6 @@ async def partially_update_meeting_room(
         session: AsyncSession = Depends(get_async_session),
 ):
     """Только для суперюзеров."""
-    print(obj_in.dict())
     project = await check_project_exists(
         project_id, session
     )

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Boolean, Integer, DateTime
+from sqlalchemy import Column, Boolean, Integer, DateTime, CheckConstraint
 
 
 class ChantyProjectDonationBaseModel:
@@ -9,3 +9,14 @@ class ChantyProjectDonationBaseModel:
     fully_invested = Column(Boolean, default=False)
     create_date = Column(DateTime, index=True, default=datetime.now)
     close_date = Column(DateTime, index=True, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            'full_amount > 0',
+            name='valid_full_amount'
+        ),
+        CheckConstraint(
+            'invested_amount <= full_amount',
+            name='valid_invested_amount'
+        )
+    )

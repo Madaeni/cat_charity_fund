@@ -36,10 +36,10 @@ class CRUDBase:
             self,
             obj_in,
             session: AsyncSession,
-            user: Optional[User] = None
+            user: Optional[User] = None,
     ):
         obj_in_data = obj_in.dict()
-        if user is not None:
+        if user:
             obj_in_data['user_id'] = user.id
         db_obj = self.model(**obj_in_data)
         session.add(db_obj)
@@ -64,6 +64,15 @@ class CRUDBase:
         await session.refresh(db_obj)
         return db_obj
 
+    async def bulk_update(
+            self,
+            sources,
+            session: AsyncSession,
+    ):
+        for obj in sources:
+            session.add(obj)
+        await session.commit()
+
     async def remove(
             self,
             db_obj,
@@ -73,41 +82,67 @@ class CRUDBase:
         await session.commit()
         return db_obj
 
-    async def create_and_invest(
+    async def get_id_by_name(
+            self,
+            obj_name: str,
+            session: AsyncSession,
+    ) -> Optional[int]:
+        db_project_id = await session.execute(
+            select(self.model.id).where(
+                self.model.name == obj_name
+            )
+        )
+        return db_project_id.scalars().first()
+
+    async def get_by_user(
         self,
-        obj_in,
-        from_objs,
         session: AsyncSession,
-        user: Optional[User] = None,
-    ) -> None:
-        obj_in_data = obj_in.dict()
-        if user is not None:
-            obj_in_data['user_id'] = user.id
-        db_obj = self.model(**obj_in_data)
-        remains = db_obj.full_amount
-        for from_obj in from_objs:
-            if db_obj.fully_invested:
+        user: User,
+    ):
+        db_objs = await session.execute(
+            select(self.model).where(self.model.user_id == user.id)
+        )
+        return db_objs.scalars().all()
+
+    async def get_opened(
+        self,
+        session: AsyncSession,
+    ):
+        projects = await session.execute(
+            select(self.model).where(
+                self.model.fully_invested == 0
+            ).order_by(self.model.create_date)
+        )
+        return projects.scalars().all()
+
+    def invest(
+        self,
+        target,
+        sources,
+    ):
+        modified = []
+        remains = target.full_amount
+        for source in sources:
+            if target.fully_invested:
                 break
-            if (from_obj.full_amount - from_obj.invested_amount - remains) < 0:
+            if (source.full_amount - source.invested_amount - remains) < 0:
                 remains = (
-                    remains + from_obj.invested_amount - from_obj.full_amount
+                    remains + source.invested_amount - source.full_amount
                 )
-                db_obj.invested_amount = db_obj.full_amount - remains
-                from_obj.invested_amount = from_obj.full_amount
-                from_obj.fully_invested = True
-                from_obj.close_date = datetime.now()
+                target.invested_amount = target.full_amount - remains
+                source.invested_amount = source.full_amount
+                source.fully_invested = True
+                source.close_date = datetime.now()
             else:
-                from_obj.invested_amount += remains
-                if from_obj.invested_amount == from_obj.full_amount:
-                    from_obj.fully_invested = True
-                    from_obj.close_date = datetime.now()
+                source.invested_amount += remains
+                if source.invested_amount == source.full_amount:
+                    source.fully_invested = True
+                    source.close_date = datetime.now()
                 remains = 0
             if remains == 0:
-                db_obj.invested_amount = db_obj.full_amount
-                db_obj.fully_invested = True
-                db_obj.close_date = datetime.now()
-            session.add(from_obj)
-        session.add(db_obj)
-        await session.commit()
-        await session.refresh(db_obj)
-        return db_obj
+                target.invested_amount = target.full_amount
+                target.fully_invested = True
+                target.close_date = datetime.now()
+            modified.append(source)
+        modified.append(target)
+        return modified

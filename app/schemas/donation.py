@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from core.constants import FULL_AMOUNT_GREATER_THAN
+
 
 class DonationBase(BaseModel):
     comment: Optional[str]
@@ -10,7 +12,7 @@ class DonationBase(BaseModel):
 
 
 class DonationCreate(DonationBase):
-    full_amount: int = Field(..., gt=0)
+    full_amount: int = Field(gt=FULL_AMOUNT_GREATER_THAN)
 
 
 class DonationDB(DonationBase):

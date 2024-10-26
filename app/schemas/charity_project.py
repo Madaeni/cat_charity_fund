@@ -3,17 +3,41 @@ from typing import Optional
 
 from pydantic import BaseModel, Extra, Field, validator
 
+from app.core.constants import (
+    PROJECT_NAME_MIN_LENGTH,
+    PROJECT_NAME_MAX_LENGTH,
+    PROJECT_DESCRIPTION_MIN_LENGTH,
+    FULL_AMOUNT_GREATER_THAN
+)
+
 
 class CharityProjectBase(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, min_length=1)
-    full_amount: Optional[int] = Field(None, gt=0)
+    name: Optional[str] = Field(
+        None,
+        min_length=PROJECT_NAME_MIN_LENGTH,
+        max_length=PROJECT_NAME_MAX_LENGTH
+    )
+    description: Optional[str] = Field(
+        None,
+        min_length=PROJECT_DESCRIPTION_MIN_LENGTH
+    )
+    full_amount: Optional[int] = Field(
+        None,
+        gt=FULL_AMOUNT_GREATER_THAN
+    )
 
 
 class CharityProjectCreate(CharityProjectBase):
-    name: str = Field(..., min_length=1, max_length=100)
-    description: str = Field(..., min_length=1)
-    full_amount: int = Field(..., gt=0)
+    name: str = Field(
+        min_length=PROJECT_NAME_MIN_LENGTH,
+        max_length=PROJECT_NAME_MAX_LENGTH
+    )
+    description: str = Field(
+        min_length=PROJECT_DESCRIPTION_MIN_LENGTH
+    )
+    full_amount: int = Field(
+        gt=FULL_AMOUNT_GREATER_THAN
+    )
 
 
 class CharityProjectUpdate(CharityProjectBase):
