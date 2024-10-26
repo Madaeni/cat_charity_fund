@@ -27,17 +27,17 @@ router = APIRouter()
     response_model_exclude_none=True,
     dependencies=[Depends(current_superuser)],
 )
-async def create_new_meeting_room(
+async def create_new_project(
         charity_project: CharityProjectCreate,
         session: AsyncSession = Depends(get_async_session),
 ):
     """Только для суперюзеров."""
     await check_name_duplicate(charity_project.name, session)
-    from_objs = await donation_crud.get_opened(session)
     new_project = await charity_project_crud.create(
         obj_in=charity_project,
-        session=session,
+        # session=session,
     )
+    from_objs = await donation_crud.get_opened(session)
     if from_objs:
         modified = charity_project_crud.invest(
             target=new_project, sources=from_objs
@@ -45,6 +45,10 @@ async def create_new_meeting_room(
         await charity_project_crud.bulk_update(
             sources=modified, session=session
         )
+    else:
+        session.add(new_project)
+        await session.commit()
+        await session.refresh(new_project)
     return new_project
 
 
@@ -53,7 +57,7 @@ async def create_new_meeting_room(
     response_model=list[CharityProjectDB],
     response_model_exclude_none=True,
 )
-async def get_all_meeting_rooms(
+async def get_all_project(
         session: AsyncSession = Depends(get_async_session),
 ):
     all_projects = await charity_project_crud.get_multi(session)
@@ -65,7 +69,7 @@ async def get_all_meeting_rooms(
     response_model=CharityProjectDB,
     dependencies=[Depends(current_superuser)],
 )
-async def partially_update_meeting_room(
+async def partially_update_project(
         project_id: int,
         obj_in: CharityProjectUpdate,
         session: AsyncSession = Depends(get_async_session),
@@ -95,7 +99,7 @@ async def partially_update_meeting_room(
     response_model_exclude_none=True,
     dependencies=[Depends(current_superuser)],
 )
-async def remove_meeting_room(
+async def remove_project(
         project_id: int,
         session: AsyncSession = Depends(get_async_session),
 ):

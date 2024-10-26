@@ -35,13 +35,23 @@ class CRUDBase:
     async def create(
             self,
             obj_in,
-            session: AsyncSession,
+            # session: AsyncSession,
             user: Optional[User] = None,
     ):
         obj_in_data = obj_in.dict()
         if user:
             obj_in_data['user_id'] = user.id
         db_obj = self.model(**obj_in_data)
+        # session.add(db_obj)
+        # await session.commit()
+        # await session.refresh(db_obj)
+        return db_obj
+
+    async def save(
+        self,
+        db_obj,
+        session: AsyncSession,
+    ):
         session.add(db_obj)
         await session.commit()
         await session.refresh(db_obj)
